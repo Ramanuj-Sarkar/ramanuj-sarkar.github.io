@@ -1,2 +1,5 @@
 # ramanuj-sarkar.github.io
-Like most similar repositories, this can be viewed like a website and has information about me.
+
+This is my personal website, hosted using GitHub pages.
+
+Click [here](https://ramanuj-sarkar.github.io/) for the intended viewing experience!
