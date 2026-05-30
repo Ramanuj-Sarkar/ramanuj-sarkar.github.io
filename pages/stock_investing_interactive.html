@@ -1,0 +1,313 @@
+
+<style>
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .tab { padding: 8px 16px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: transparent; cursor: pointer; font-size: 13px; color: var(--color-text-secondary); transition: all 0.15s; }
+  .tab.active { background: var(--color-background-secondary); color: var(--color-text-primary); border-color: var(--color-border-primary); font-weight: 500; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 1rem 0; }
+  .metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 14px; }
+  .metric-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+  .metric-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .metric-sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+  .row { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+  label { font-size: 13px; color: var(--color-text-secondary); min-width: 140px; }
+  .val { font-size: 13px; font-weight: 500; min-width: 56px; text-align: right; color: var(--color-text-primary); }
+  .income-row { display: flex; justify-content: space-between; padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+  .income-row.head { background: var(--color-background-secondary); font-weight: 500; }
+  .income-row.sub { color: var(--color-text-secondary); padding-left: 24px; }
+  .income-row.total { font-weight: 500; border-top: 0.5px solid var(--color-border-tertiary); margin-top: 4px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; margin-left: 8px; }
+  .badge.good { background: var(--color-background-success); color: var(--color-text-success); }
+  .badge.warn { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .badge.bad { background: var(--color-background-danger); color: var(--color-text-danger); }
+  .section-title { font-size: 15px; font-weight: 500; margin: 0 0 4px; }
+  .section-sub { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 1.25rem; }
+  .verdict { padding: 12px 16px; border-radius: var(--border-radius-md); margin-top: 1rem; border: 0.5px solid var(--color-border-tertiary); font-size: 13px; line-height: 1.6; }
+  .bs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 1rem; }
+  .bs-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px; }
+  .bs-title { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+  .bs-item { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .bs-item:last-child { border-bottom: none; font-weight: 500; }
+  .ask-btn { margin-top: 1rem; padding: 8px 16px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); background: transparent; cursor: pointer; font-size: 13px; color: var(--color-text-primary); }
+  .ask-btn:hover { background: var(--color-background-secondary); }
+</style>
+
+<h2 class="sr-only">Interactive stock investing calculator covering P/E ratio, income statement, and balance sheet analysis</h2>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('pe')">P/E &amp; Valuation</button>
+  <button class="tab" onclick="switchTab('income')">Income Statement</button>
+  <button class="tab" onclick="switchTab('balance')">Balance Sheet</button>
+  <button class="tab" onclick="switchTab('rules')">Key Rules</button>
+</div>
+
+<div id="pe" class="section active">
+  <p class="section-title">P/E ratio calculator</p>
+  <p class="section-sub">Adjust the sliders to see how price and earnings affect valuation signals.</p>
+
+  <div class="row">
+    <label>Stock price ($)</label>
+    <input type="range" min="1" max="500" value="150" id="price" style="flex:1" oninput="calcPE()">
+    <span class="val" id="price-out">$150</span>
+  </div>
+  <div class="row">
+    <label>Earnings per share ($)</label>
+    <input type="range" min="0.5" max="30" step="0.5" value="7.5" id="eps" style="flex:1" oninput="calcPE()">
+    <span class="val" id="eps-out">$7.50</span>
+  </div>
+  <div class="row">
+    <label>Book value per share ($)</label>
+    <input type="range" min="1" max="300" value="60" id="bvps" style="flex:1" oninput="calcPE()">
+    <span class="val" id="bvps-out">$60</span>
+  </div>
+  <div class="row">
+    <label>Industry avg P/E</label>
+    <input type="range" min="5" max="60" value="22" id="indpe" style="flex:1" oninput="calcPE()">
+    <span class="val" id="indpe-out">22x</span>
+  </div>
+
+  <div class="metric-grid" id="pe-metrics"></div>
+  <div class="verdict" id="pe-verdict"></div>
+
+  <button class="ask-btn" onclick="sendPrompt('Explain when a high P/E ratio is justified vs when it is a warning sign ↗')">When is a high P/E OK? ↗</button>
+</div>
+
+<div id="income" class="section">
+  <p class="section-title">Income statement walkthrough</p>
+  <p class="section-sub">Edit revenue and cost assumptions to see how margins flow through.</p>
+
+  <div class="row">
+    <label>Revenue ($M)</label>
+    <input type="range" min="100" max="5000" step="50" value="1000" id="rev" style="flex:1" oninput="calcIncome()">
+    <span class="val" id="rev-out">$1,000M</span>
+  </div>
+  <div class="row">
+    <label>COGS (% of revenue)</label>
+    <input type="range" min="20" max="80" value="45" id="cogs" style="flex:1" oninput="calcIncome()">
+    <span class="val" id="cogs-out">45%</span>
+  </div>
+  <div class="row">
+    <label>Operating expenses ($M)</label>
+    <input type="range" min="50" max="800" step="10" value="200" id="opex" style="flex:1" oninput="calcIncome()">
+    <span class="val" id="opex-out">$200M</span>
+  </div>
+  <div class="row">
+    <label>Tax rate (%)</label>
+    <input type="range" min="10" max="35" value="21" id="tax" style="flex:1" oninput="calcIncome()">
+    <span class="val" id="tax-out">21%</span>
+  </div>
+
+  <div id="income-table" style="margin-top: 1.25rem;"></div>
+  <div class="metric-grid" id="income-metrics" style="margin-top: 1rem;"></div>
+  <button class="ask-btn" onclick="sendPrompt('What gross margin is considered strong for a SaaS company vs a retailer? ↗')">How do margins vary by industry? ↗</button>
+</div>
+
+<div id="balance" class="section">
+  <p class="section-title">Balance sheet snapshot</p>
+  <p class="section-sub">See how assets, liabilities, and equity relate — and what the ratios mean.</p>
+
+  <div class="row">
+    <label>Cash &amp; equivalents ($M)</label>
+    <input type="range" min="10" max="1000" step="10" value="200" id="cash" style="flex:1" oninput="calcBS()">
+    <span class="val" id="cash-out">$200M</span>
+  </div>
+  <div class="row">
+    <label>Other current assets ($M)</label>
+    <input type="range" min="50" max="1000" step="10" value="300" id="curra" style="flex:1" oninput="calcBS()">
+    <span class="val" id="curra-out">$300M</span>
+  </div>
+  <div class="row">
+    <label>Long-term assets ($M)</label>
+    <input type="range" min="100" max="3000" step="50" value="800" id="lta" style="flex:1" oninput="calcBS()">
+    <span class="val" id="lta-out">$800M</span>
+  </div>
+  <div class="row">
+    <label>Current liabilities ($M)</label>
+    <input type="range" min="50" max="800" step="10" value="250" id="currL" style="flex:1" oninput="calcBS()">
+    <span class="val" id="currL-out">$250M</span>
+  </div>
+  <div class="row">
+    <label>Long-term debt ($M)</label>
+    <input type="range" min="0" max="2000" step="50" value="400" id="ltd" style="flex:1" oninput="calcBS()">
+    <span class="val" id="ltd-out">$400M</span>
+  </div>
+
+  <div id="bs-display" style="margin-top:1rem;"></div>
+  <div class="metric-grid" id="bs-metrics" style="margin-top:1rem;"></div>
+  <button class="ask-btn" onclick="sendPrompt('What debt-to-equity ratio is considered safe, and does it vary by industry? ↗')">What debt level is safe? ↗</button>
+</div>
+
+<div id="rules" class="section">
+  <p class="section-title">10 principles every investor should know</p>
+  <div id="rules-list"></div>
+  <button class="ask-btn" onclick="sendPrompt('Tell me more about the margin of safety concept and how value investors apply it ↗')">Deep-dive: margin of safety ↗</button>
+</div>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const ids = ['pe','income','balance','rules'];
+    t.classList.toggle('active', ids[i] === id);
+  });
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function badge(val, good, warn) {
+  if (val >= good) return '<span class="badge good">Strong</span>';
+  if (val >= warn) return '<span class="badge warn">OK</span>';
+  return '<span class="badge bad">Weak</span>';
+}
+
+function calcPE() {
+  const price = +document.getElementById('price').value;
+  const eps = +document.getElementById('eps').value;
+  const bvps = +document.getElementById('bvps').value;
+  const indpe = +document.getElementById('indpe').value;
+  document.getElementById('price-out').textContent = '$' + price;
+  document.getElementById('eps-out').textContent = '$' + eps.toFixed(2);
+  document.getElementById('bvps-out').textContent = '$' + bvps;
+  document.getElementById('indpe-out').textContent = indpe + 'x';
+
+  const pe = (price / eps).toFixed(1);
+  const pb = (price / bvps).toFixed(2);
+  const rel = ((pe / indpe - 1) * 100).toFixed(0);
+  const relSign = rel > 0 ? '+' : '';
+
+  document.getElementById('pe-metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">P/E Ratio</div><div class="metric-value">${pe}x</div><div class="metric-sub">vs industry ${indpe}x</div></div>
+    <div class="metric"><div class="metric-label">P/B Ratio</div><div class="metric-value">${pb}x</div><div class="metric-sub">${pb < 1 ? 'Below book value' : pb < 3 ? 'Reasonable' : 'Premium valuation'}</div></div>
+    <div class="metric"><div class="metric-label">vs industry</div><div class="metric-value">${relSign}${rel}%</div><div class="metric-sub">${rel > 20 ? 'Pricier than peers' : rel < -20 ? 'Cheaper than peers' : 'Near peer avg'}</div></div>
+    <div class="metric"><div class="metric-label">Earnings yield</div><div class="metric-value">${(100/pe).toFixed(1)}%</div><div class="metric-sub">EPS / Price (inverse P/E)</div></div>
+  `;
+
+  let verdict = '';
+  if (pe < 10) verdict = '🟢 Low P/E may indicate a bargain — but verify earnings aren\'t declining. Check revenue trends and debt.';
+  else if (pe < 20) verdict = '🟡 Moderate valuation in line with historical averages. Good starting point for further analysis.';
+  else if (pe < 35) verdict = '🟠 Elevated P/E — market expects strong growth. Ask: is the growth story credible and already priced in?';
+  else verdict = '🔴 High P/E requires exceptional future growth to justify. Small disappointments can cause large price drops.';
+
+  if (pb < 1) verdict += ' P/B below 1 could signal a deep value opportunity — or that assets are impaired.';
+  document.getElementById('pe-verdict').textContent = verdict;
+}
+
+function calcIncome() {
+  const rev = +document.getElementById('rev').value;
+  const cogsPct = +document.getElementById('cogs').value / 100;
+  const opex = +document.getElementById('opex').value;
+  const taxRate = +document.getElementById('tax').value / 100;
+
+  document.getElementById('rev-out').textContent = '$' + rev + 'M';
+  document.getElementById('cogs-out').textContent = document.getElementById('cogs').value + '%';
+  document.getElementById('opex-out').textContent = '$' + opex + 'M';
+  document.getElementById('tax-out').textContent = document.getElementById('tax').value + '%';
+
+  const cogs = Math.round(rev * cogsPct);
+  const gross = rev - cogs;
+  const grossM = Math.round(gross / rev * 100);
+  const ebit = gross - opex;
+  const ebitM = Math.round(ebit / rev * 100);
+  const interest = Math.round(rev * 0.02);
+  const ebt = ebit - interest;
+  const tax = Math.round(Math.max(0, ebt) * taxRate);
+  const net = ebt - tax;
+  const netM = Math.round(net / rev * 100);
+
+  document.getElementById('income-table').innerHTML = `
+    <div class="income-row head"><span>Revenue</span><span>$${rev}M</span></div>
+    <div class="income-row sub"><span>Cost of goods sold (COGS)</span><span style="color:var(--color-text-danger)">−$${cogs}M</span></div>
+    <div class="income-row total"><span>Gross profit</span><span>$${gross}M <span style="font-size:11px;color:var(--color-text-secondary)">${grossM}% margin</span></span></div>
+    <div style="height:8px"></div>
+    <div class="income-row sub"><span>Operating expenses (SG&A, R&D)</span><span style="color:var(--color-text-danger)">−$${opex}M</span></div>
+    <div class="income-row total"><span>Operating income (EBIT)</span><span>$${ebit}M <span style="font-size:11px;color:var(--color-text-secondary)">${ebitM}% margin</span></span></div>
+    <div style="height:8px"></div>
+    <div class="income-row sub"><span>Interest expense (est.)</span><span style="color:var(--color-text-danger)">−$${interest}M</span></div>
+    <div class="income-row sub"><span>Taxes (${document.getElementById('tax').value}%)</span><span style="color:var(--color-text-danger)">−$${tax}M</span></div>
+    <div class="income-row total" style="background:var(--color-background-secondary);padding:8px 12px;border-radius:6px"><span>Net income</span><span style="color:${net>0?'var(--color-text-success)':'var(--color-text-danger)'}">$${net}M <span style="font-size:11px">${netM}% margin</span></span></div>
+  `;
+
+  document.getElementById('income-metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Gross margin</div><div class="metric-value">${grossM}%</div><div class="metric-sub">${grossM>50?'Strong':'Could be better'}</div></div>
+    <div class="metric"><div class="metric-label">Operating margin</div><div class="metric-value">${ebitM}%</div><div class="metric-sub">${ebitM>15?'Healthy':'Thin'}</div></div>
+    <div class="metric"><div class="metric-label">Net margin</div><div class="metric-value">${netM}%</div><div class="metric-sub">${netM>10?'Good':'Watch costs'}</div></div>
+  `;
+}
+
+function calcBS() {
+  const cash = +document.getElementById('cash').value;
+  const curra = +document.getElementById('curra').value;
+  const lta = +document.getElementById('lta').value;
+  const currL = +document.getElementById('currL').value;
+  const ltd = +document.getElementById('ltd').value;
+
+  document.getElementById('cash-out').textContent = '$' + cash + 'M';
+  document.getElementById('curra-out').textContent = '$' + curra + 'M';
+  document.getElementById('lta-out').textContent = '$' + lta + 'M';
+  document.getElementById('currL-out').textContent = '$' + currL + 'M';
+  document.getElementById('ltd-out').textContent = '$' + ltd + 'M';
+
+  const totalCurrA = cash + curra;
+  const totalAssets = totalCurrA + lta;
+  const totalLiab = currL + ltd;
+  const equity = totalAssets - totalLiab;
+  const currentRatio = (totalCurrA / currL).toFixed(2);
+  const deToEq = equity > 0 ? (ltd / equity).toFixed(2) : '∞';
+  const cashPct = Math.round(cash / totalAssets * 100);
+
+  document.getElementById('bs-display').innerHTML = `
+    <div class="bs-grid">
+      <div class="bs-box">
+        <div class="bs-title">Assets</div>
+        <div class="bs-item"><span>Cash</span><span>$${cash}M</span></div>
+        <div class="bs-item"><span>Other current assets</span><span>$${curra}M</span></div>
+        <div class="bs-item" style="border-top:0.5px solid var(--color-border-tertiary);padding-top:4px"><span>Total current</span><span>$${totalCurrA}M</span></div>
+        <div class="bs-item"><span>Long-term assets</span><span>$${lta}M</span></div>
+        <div class="bs-item"><span>Total assets</span><span>$${totalAssets}M</span></div>
+      </div>
+      <div class="bs-box">
+        <div class="bs-title">Liabilities &amp; Equity</div>
+        <div class="bs-item"><span>Current liabilities</span><span>$${currL}M</span></div>
+        <div class="bs-item"><span>Long-term debt</span><span>$${ltd}M</span></div>
+        <div class="bs-item" style="border-top:0.5px solid var(--color-border-tertiary);padding-top:4px"><span>Total liabilities</span><span>$${totalLiab}M</span></div>
+        <div class="bs-item" style="color:var(--color-text-success)"><span>Shareholders' equity</span><span>$${equity}M</span></div>
+        <div class="bs-item"><span>Total L + E</span><span>$${totalAssets}M</span></div>
+      </div>
+    </div>
+  `;
+
+  const crNum = parseFloat(currentRatio);
+  const deNum = parseFloat(deToEq);
+  document.getElementById('bs-metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Current ratio</div><div class="metric-value">${currentRatio}x</div><div class="metric-sub">${crNum >= 1.5 ? 'Healthy liquidity' : crNum >= 1 ? 'Tight but OK' : 'Liquidity risk'}</div></div>
+    <div class="metric"><div class="metric-label">Debt / Equity</div><div class="metric-value">${deToEq}x</div><div class="metric-sub">${deNum <= 1 ? 'Conservative' : deNum <= 2 ? 'Moderate' : 'Highly leveraged'}</div></div>
+    <div class="metric"><div class="metric-label">Cash as % of assets</div><div class="metric-value">${cashPct}%</div><div class="metric-sub">${cashPct > 20 ? 'Cash-rich' : 'Normal'}</div></div>
+    <div class="metric"><div class="metric-label">Shareholders' equity</div><div class="metric-value">$${equity}M</div><div class="metric-sub">${equity > 0 ? 'Solvent' : 'Insolvent!'}</div></div>
+  `;
+}
+
+const rules = [
+  { icon: 'ti-shield', title: 'Margin of safety', body: 'Only buy when price is meaningfully below your estimate of intrinsic value. Errors happen — the discount protects you.' },
+  { icon: 'ti-chart-line', title: 'Understand the business', body: 'If you can\'t explain in 2 sentences how the company makes money, don\'t invest. Complexity hides risk.' },
+  { icon: 'ti-clock', title: 'Think long-term', body: 'Short-term price moves are noise. Focus on where the business will be in 3–10 years.' },
+  { icon: 'ti-building', title: 'Look for moats', body: 'Durable competitive advantages (brand, network effects, cost advantages, switching costs) protect profits from competitors.' },
+  { icon: 'ti-cash', title: 'Cash flow > accounting profits', body: 'Companies can manipulate earnings. Free cash flow (operating cash minus capex) is harder to fake.' },
+  { icon: 'ti-users', title: 'Evaluate management', body: 'Look at capital allocation history. Are they buying back stock, paying dividends, or making smart acquisitions? Avoid empire-builders.' },
+  { icon: 'ti-arrows-shuffle', title: 'Diversify, but not too much', body: '15–25 stocks across sectors is enough. Too few = concentration risk. Too many = you\'re indexing at higher cost.' },
+  { icon: 'ti-trending-down', title: 'Never catch a falling knife', body: 'A stock down 50% can go down another 50%. Cheap price alone isn\'t a reason to buy — the thesis must be intact.' },
+  { icon: 'ti-refresh', title: 'Review regularly', body: 'Re-read your investment thesis quarterly. If it\'s broken, sell — don\'t hold out of hope or sunk cost.' },
+  { icon: 'ti-mood-happy', title: 'Control your emotions', body: 'Fear and greed are the investor\'s worst enemies. Write down your thesis before buying; refer to it during volatility.' },
+];
+
+document.getElementById('rules-list').innerHTML = rules.map(r => `
+  <div style="display:flex;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--color-border-tertiary);align-items:flex-start">
+    <i class="ti ${r.icon}" style="font-size:18px;color:var(--color-text-secondary);margin-top:2px;flex-shrink:0" aria-hidden="true"></i>
+    <div>
+      <div style="font-size:14px;font-weight:500;margin-bottom:2px">${r.title}</div>
+      <div style="font-size:13px;color:var(--color-text-secondary);line-height:1.5">${r.body}</div>
+    </div>
+  </div>
+`).join('');
+
+calcPE(); calcIncome(); calcBS();
+</script>
